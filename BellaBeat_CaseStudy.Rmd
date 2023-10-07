@@ -1,0 +1,1065 @@
+---
+title: "Bellabeat Case Study"
+course: "Google Data Analytics Certificate"
+author: "Alan Roebuck"
+date: "2023-09-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE, echo=FALSE}
+
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(rstatix)
+select <- dplyr::select
+
+```
+
+
+This case study was performed as a part of the Google Analytics career certificate course. All code necessary to reproduce visual and statistical analysis associated with this project are available via [Github](https://github.com/jar3559/Bellabeat_Case_Study_Google_Analytics).
+
+
+
+## **1. Case Study Scenario**
+
+You are a junior data analyst working on the marketing analyst team at Bellabeat, a high-tech manufacturer of health-focused products for women. Bellabeat is a successful small company, but they have the potential to become a larger player in the global smart device market. Urška Sršen, cofounder and Chief Creative Officer of Bellabeat, believes that analyzing smart device fitness data could help unlock new growth opportunities for the company. You have been asked to focus on one of Bellabeat’s products and analyze smart device data to gain insight into how consumers are using their smart devices. The insights you discover will then help guide marketing strategy for the company. You will present your analysis to the Bellabeat executive team along with your high-level recommendations for Bellabeat’s marketing strategy.
+
+* **Bellabeat Products**
+  + *Bellabeat app:* The Bellabeat app provides users with health data related to their activity, sleep, stress, menstrual cycle, and mindfulness habits. This data can help users better understand their current habits and make healthy decisions. The Bellabeat app connects to their line of smart wellness products
+  + *Leaf:* Bellabeat’s classic wellness tracker can be worn as a bracelet, necklace, or clip. The Leaf tracker connects to the Bellabeat app to track activity, sleep, and stress.   
+  + *Time:* This wellness watch combines the timeless look of a classic timepiece with smart technology to track user activity, sleep, and stress. The Time watch connects to the Bellabeat app to provide you with insights into your daily wellness
+  + *Spring:* This is a water bottle that tracks daily water intake using smart technology to ensure that you are appropriately hydrated throughout the day. The Spring bottle connects to the Bellabeat app to track your hydration levels.
+
+<br/>
+
+
+
+## **2. Assignment**
+
+You are asked to analyze smart device usage data in order to gain insight into how consumers use non-Bellabeat smart devices and to select one Bellabeat product to apply these insights to in your presentation. These question will guide your analysis:
+
+1. What are some trends in smart device usage?
+
+2. How could these trends apply to Bellabeat customers?
+
+3. How could these trends help influence Bellabeat marketing strategy?
+
+<br/>
+
+
+
+## **3. Data Availability and Description**
+
+### *3.1 Data Source*
+
+To complete this project, data for Fitbit users at various time resolutions was obtained from [Kaggle](https://www.kaggle.com/datasets/arashnic/fitbit), which was originally sourced from Furberg et al., 2016, doi: [10.5281/zenodo.53894](https://doi.org/10.5281/zenodo.53894). 
+
+<br>
+
+### *3.2 Data Files*
+
+The dataset consist of the following files: 
+
+File Name                           | Description
+:---------------------------------- | :-----------------------------------------------------------------------
+dailyActivity_merged.csv            | Daily calories, steps, and intensities (active minutes)
+dailyCalories_merged.csv            | Total daily calories burned
+dailyIntensities_merged.csv         | Total daily minutes for which users were active or sedentary
+dailySteps_merged.csv               | Total daily steps
+heartrate_seconds_merged.csv        | User heart rate beats per minute at second intervals
+hourlyCalories_merged.csv           | Hourly calories
+hourlyIntensities_merged.csv        | Number of active and sedentary minutes by hour
+hourlySteps_merged.csv              | Number of hourly steps
+minuteCaloriesNarrow_merged.csv     | Calories burned by minute in long frame format
+minuteCaloriesWide_merged.csv       | Calories burned by minute in wide frame format
+minuteIntensitiesNarrow_merged.csv  | Active and sedentary minutes in long format
+minuteIntensitiesWide_merged.csv    | Active and sedentary minutes in wide format
+MInuteMETsNarrow_merged.csv         | Metabolic equivalents (MET) per minute
+minuteSleep_merged.csv              | Each individual minute logged as sleep
+minuteStepsNarrow_merged.csv        | Steps logged each minute long format
+minuteStepsWide_merged.csv          | Steps logged each minute wide format
+sleepDay_merged.csv                 | Total number of minutes slept per day
+weightLogInfo_merged.csv            | Information related to user weight
+
+<br/>
+
+### *3.3 Initial Assessment of Data*
+
+Broadly, it cannot be said with confidence this data is a good representation of the Bellabeat client base, which targets middle age women. For instance, this dataset provides no information on race, sex, age, nor geographic information. Thus, we can only make small inferences regarding the broader fitness community rather than specifically those specifically related to women. 
+
+Furthermore, this data is quite limited, with only 33 participants over a 31 day period. Thus, we would most likely consider this data a preliminary effort to better inform the design of a larger study rather than being directly used to inform major decisions. 
+
+<br/>
+
+
+
+
+## **4. Questions and Hypotheses**
+
+Here, a set of 5 questions and corresponding hypothesis are presented. Questions 1-3 ask about general fitness patterns for users who participated in the study while questions 4 and 5 are directly linked with how users use the fitness watches and products with implications marketing strategy. 
+
+<br/>
+
+
+**Q1:** When are people most active throughout the day and does that couple with energy expenditure? How does this compare among people of different activity level?
+
+* *H1:* It is hypothesized that all users of all activity levels will be most active in the late evening, likely due to uptick in workouts at the end of the day or due to general after work/ after school activities that will occur 
+
+<br/>
+
+**Q2:** Are people more active during the typical workweek or on weekends and are there differences based on peoples activity level? 
+
+* *H2:* It is hypothesized that users of all activity levels will see a general increase in activity during the weekends as this is when most people have free time. 
+
+
+<br/>
+
+**Q3:** Do more physically active users get more hours of sleep at night?
+
+* *H3:* It is hypothesized that sedentary users sleep more compared to active users
+
+<br/>
+
+**Q4:** Is fitness level an indicator how many days users consistently wear a fitness watch (e.g., motivation to regularly use product)? 
+
+* *H4:* It is hypothesized that more active people are more motivated to consistently wear their fitness watch on a daily basis. 
+
+<br/>
+
+**Q5:** Is fitness level an indicator of how often wear a fitness watch to monitor sleep activity (e.g. motivation to use a product feature)?
+
+* *H5* It is hypothesized that more active users are also more motivated to use their watch to monitor sleep activity and will more consistently wear their devices to bed. 
+
+<br/>
+
+<br/>
+
+
+## **5. Data Preparation, Cleaning, and Aggregation**
+### *5.1 Retrieve Daily Activity, Sleep, and Weight Data*
+
+<br/>
+
+1. First, daily activity, sleep and weight data were retrieved from the files *'dailyActivity_merged.csv'*, *'sleepDay_merged.csv'*, and *'weightLogInfo_merged.csv'*. 
+
+2. The total active and sedentary minutes were totaled as a potential indicator of how much time during the day a fitness watch was worn. This is assessed in more detail in the following section
+
+3. A BMI class ([World Health Organization](https://www.who.int/europe/news-room/fact-sheets/item/a-healthy-lifestyle---who-recommendations)) was assigned as follows:
+
+<br/>
+
+
+BMI Score | BMI Class
+:-------- | :---------
+Under 18.5| Underweight
+18.5 - 25 | Normal
+25 - 30   | Overweight
+Over 30   | Obese
+
+
+<br/>
+
+
+```{r, echo=FALSE}
+
+# Read in activity data and add a column for "Day_Used". This column is defined by the number of steps. 
+
+activity <- read.csv("dailyActivity_merged.csv", sep=",") %>%
+  mutate(TotalTime_hr = (VeryActiveMinutes+FairlyActiveMinutes+LightlyActiveMinutes+SedentaryMinutes)/60,
+         Date = format(as.POSIXct(ActivityDate, format="%m/%d/%Y")),
+         Weekday = weekdays(as.Date(Date))) %>%
+  select(-c(ActivityDate)) %>%
+  select(Id,Date, Weekday, everything())
+
+
+# Read in sleep data
+sleep <- read.csv("sleepDay_merged.csv", sep=",")
+
+# Read in weight data and add a column for BMI. BMI metrics were defined by the World Health Organization
+weight <- read.csv("weightLogInfo_merged.csv", sep=",") %>% 
+  arrange(Id) %>% 
+  mutate(BMI_class = case_when(BMI <= 18.5 ~ "Underweight",
+                               BMI > 18.5 & BMI <= 25 ~ "Normal",
+                               BMI > 25 & BMI<=30 ~ "Overweight",
+                               BMI > 30 ~ "Obese"))
+```
+
+
+
+### *5.2 Assessment of Total Active and Sedentary Minutes as Indicators of Time a Watch is Worn* 
+Above, the total daily active and sedentary minutes were summed to represent the cumulative time a fitness watch was worn throughout the day. However, after skimming the data, it was observed that there are a number of instances in which zero steps were logged. This is likely due to the fact that a Fitbit will continue to record data even when a watch is not worn. For instance, when a watch is not worn, Fitbit will continue to log minutes as "sedentary". 
+
+The table below shows that there were 77 data entries in which the *total wear time* would indicate some use of the watch throughout the day, however the watch recorded a total step value of '0'. This is an indication that some users were not actively wearing their watch a despite having some data recorded. There were 15 participants with at least 1 entry and 4 participants with greater than 10 daily entries that meet this criteria. 
+
+**This indicates that the Total Wear Time calculated based on the cumulative active and sedentary minutes is not reliable** and an alternative means to assess how consistently users wear their fitness watch is needed.  
+
+<br/>
+
+```{r, echo=FALSE}
+
+activity %>% filter(TotalSteps == 0 & TotalTime_hr > 0 & TotalTime_hr <=24) %>% group_by(Id) %>% summarise(active_nonuse = n()) %>% print() %>% summarise(total_active_nonuse = sum(active_nonuse))
+                                                                                     
+```
+
+<br/>
+
+### *5.3 Aggregate Data By Individual User to Determine Average Daily Activities*
+
+The data was aggregated by individual user to describe their **average daily activity**. The total number of days in which a watch was used was determined based on the number of daily steps taken rather than the total active and sedentary minutes, which was deemed unreliable above. However, an additional challenge with regards to assigning activity based on the number of daily steps is that there are some instances in which the step count is unreasonably low (e.g., less than 100) assuming a healthy sampling population. According to the Mayo Clinic, the average American walks 3,000-4,000 steps per day. Thus, a very loose approach is taken to say a person must have walked at least 500 steps in order for the watch to be credited as a daily use. 
+
+Once filtering to include only records above the 500 step threshold, the number of daily entries for each user were summed and the active daily use was arbitrarily defined as: 
+
+
+Number of Days Counted     | Daily Use Metric
+:------------------------  | :-----------------
+30+ days                   | High Daily Use
+20-29 days                 | Moderate Daily Use
+Fewer than 20 days         | Low Daily Use
+
+-------------------------------------------------------
+
+Second, the average daily steps for each user was determined (where daily steps > 500) and an activity score was assigned based on recommendations from the [10,000 Steps Organization](https://www.10000steps.org.au/articles/healthy-lifestyles/counting-steps/). Activity levels were assigned as follows:
+
+Number of Daily Steps     | Activity Level
+:------------------------ | :-----------------
+Fewer than 5000           | Sedentary
+5,000 - 10,000            | Lightly Active
+Over 10,000               | Active
+
+
+-------------------------------------------------------
+
+Third, the average number of hours of sleep, total time in bed, and total time awake in bed (time in bed - hours of sleep) were calculated. 
+
+-------------------------------------------------------
+
+Fourth, a table containing the individual user and their BMI was made. 
+
+-------------------------------------------------------
+
+Finally, all aggregated data just described were merged
+
+
+```{r, echo=FALSE}
+# Determine how many days in which the tracking device was used for the Full Day. Note, this assumption does not include sleep patterns
+days_used_sum <- activity %>%
+  mutate(DaysUsed = case_when(TotalSteps <=500 ~ "Not Used",
+                             TotalSteps > 500 ~ "Used"))%>%
+  filter(DaysUsed == "Used") %>%
+  group_by(Id) %>%
+  summarise(days_used = n(),
+            active_use = case_when(days_used >= 30 ~ "High Daily Use",
+                                   days_used >= 20 & days_used < 30 ~ "Moderate Daily Use",
+                                   days_used < 20 ~ "Low Daily Use"))
+  
+
+
+# Determine the average number of steps used for each individual Id
+steps_sum <- activity %>%
+  filter(TotalSteps > 500)%>%
+  group_by(Id)%>%
+  summarise(avg_steps = mean(TotalSteps),
+            sd_steps = sd(TotalSteps))%>%
+  mutate(activity_level = case_when(avg_steps < 5000~"Sedentary",
+                                    avg_steps >= 5000 & avg_steps < 10000~"Lightly Active",
+                                    avg_steps > 10000 ~ "Active"))
+
+# Adds Activity Level derived from average daily data to the non-aggregated daily data.
+steps_sum_2 <- steps_sum %>% select(Id, activity_level)
+activity <- activity %>% left_join(steps_sum_2, by="Id")
+
+
+# Determine the average number of hours someone is asleep, in bed, and the time to fall asleep 
+sleep_sum <- sleep %>% 
+  group_by(Id) %>% 
+  summarise(sleep_days_used = n(),
+            avg_sleep_hr = mean(TotalMinutesAsleep/60),
+            sd_sleep_hr = sd(TotalMinutesAsleep/60),
+            avg_time_bed_hr = mean(TotalTimeInBed),
+            sd_time_bed_hr = sd(TotalTimeInBed),
+            avg_awake_hr = mean((TotalTimeInBed-TotalMinutesAsleep)/60),
+            sd_awake_hr = sd((TotalTimeInBed-TotalMinutesAsleep)/60))
+
+
+
+# Create data.frame to aggregate BMI information for individual participants
+bmi <- weight %>%
+  select(Id, BMI_class) %>%
+  distinct()
+
+
+# Merge Daily Use Activity, Step activity, sleep activity, and BMI information to final dataframe
+
+data <- days_used_sum %>%
+  left_join(steps_sum, by="Id") %>%
+  left_join(bmi, by="Id") %>%
+  left_join(sleep_sum, by="Id") %>%
+  mutate(BMI_class = ifelse(is.na(BMI_class), "Not Reported", BMI_class),
+         sleep_days_used = ifelse(is.na(sleep_days_used),0,sleep_days_used))
+
+
+rm(days_used_sum, sleep_sum, steps_sum, weight, bmi, steps_sum_2, sleep)
+
+head(data)
+
+```
+
+<br/>
+
+### *5.4 Retrieve Hourly Calorie and Steps Data*
+
+Hourly calorie and hourly steps data were retrieved from the files *'hourlyCalories_merged.csv'* and *'hourlySteps_merged.csv'*. In both cases, data is reshaped from 'long' to 'wide' format with column names renamed based on hourly intervals.
+```{r, echo=FALSE}
+
+calories_hr <- read.csv("hourlyCalories_merged.csv") %>%
+  mutate(ActivityHour = mdy_hms(ActivityHour),
+         Date = format(as.POSIXct(ActivityHour), format="%Y-%m-%d"),
+         Time = format(as.POSIXct(ActivityHour), format="%H:%M:%S")) %>%
+  select(Id, Date, Time, Calories) %>%
+  reshape(idvar=c("Id","Date"), timevar="Time", direction="wide") %>%
+  rename(hr01=3, hr02=4, hr03=5,hr04=6, hr05=7, hr06=8, hr07=9, hr08=10, hr09=11, hr10=12, hr11=13, hr12=14,
+         hr13=15, hr14=16, hr15=17, hr16=18, hr17=19, hr18=20, hr19=21, hr20=22, hr21=23, hr22=24, hr23=25, hr24=26)%>%
+  mutate_if(is.integer, as.numeric)
+
+steps_hr <- read.csv("hourlySteps_merged.csv") %>%
+  mutate(ActivityHour = mdy_hms(ActivityHour),
+         Date = format(as.POSIXct(ActivityHour), format="%Y-%m-%d"),
+         Time = format(as.POSIXct(ActivityHour), format="%H:%M:%S")) %>%
+  select(Id, Date, Time, StepTotal) %>%
+  reshape(idvar=c("Id","Date"), timevar="Time", direction="wide") %>%
+  rename(hr01=3, hr02=4, hr03=5,hr04=6, hr05=7, hr06=8, hr07=9, hr08=10, hr09=11, hr10=12, hr11=13, hr12=14,
+         hr13=15, hr14=16, hr15=17, hr16=18, hr17=19, hr18=20, hr19=21, hr20=22, hr21=23, hr22=24, hr23=25, hr24=26) %>%
+  mutate_if(is.integer, as.numeric)
+
+
+
+```
+
+<br/>
+
+### *5.5 Clean Hourly Data*
+
+The hourly data was cleaned by removing data where the total number of daily steps was less than 500. 
+
+```{r, echo=FALSE}
+
+data_trimmed <- data %>% select(Id, active_use)
+
+calories_hr_cleaned <-  activity %>%
+  left_join(calories_hr, by=c("Id","Date"))%>%
+  left_join(data_trimmed, by="Id")%>%
+  filter(TotalSteps > 500) %>%
+  select(Id,Date,active_use, activity_level, hr01:hr24)
+
+steps_hr_cleaned <- activity %>%
+  left_join(steps_hr, by=c("Id", "Date")) %>%
+  left_join(data_trimmed, by="Id")%>%
+  filter(TotalSteps > 500) %>%
+  select(Id, Date, active_use, activity_level, hr01:hr24)
+
+rm(calories_hr, steps_hr, data_trimmed)
+
+
+print("Hourly Steps")
+head(steps_hr_cleaned)
+```
+
+<br>
+
+```{r, echo=FALSE}
+print("Hourly Calories")
+head(calories_hr_cleaned)
+```
+
+<br/>
+
+
+### *5.6 Preliminary Assessment of Data Population Represented in Study*
+
+* Here, a series of pie charts are used to display general information about fitness watch users in this study. The proportion of 'Lightly Active' users represents more than 50% of the data set and is overrepresented compared to 'Active' and 'Sedentary' users.
+
+* Similarly, the number of users who more consistently wear their fitness watch is >50% and is also over represented compared to those who only moderately wore or were inconsistent in their daily fitness watch usage. 
+
+* Finally, of the 33 participants in the study, most did not provide weight information rendering use of the BMI or weight related metrics as unreliable for effective use in this study. 
+
+```{r, pie polot of active users, fig.width=4, fig.height=4, echo=FALSE, warning=FALSE}
+activity_level_plot <- data %>%
+  group_by(activity_level) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(perc = round(n/sum(n),4)) %>%
+  arrange(perc) %>%
+  mutate(labels=scales::percent(perc)) %>% 
+  ggplot(aes(x="", y=perc, fill=factor(activity_level, levels=c("Sedentary", "Lightly Active", "Active"))))+
+  geom_col(colour="black", size=0.5)+
+  geom_label(aes(label=labels),
+             colour=c(1,"white", "white"),
+             position=position_stack(vjust=c(0.6,0.5,0.40)),
+             show.legend=FALSE,
+             size=12/.pt)+
+  coord_polar(theta="y")+
+  labs(fill="", tag="Activity Level")+
+  scale_fill_viridis_d(direction=-1)+
+  theme_void()+
+  theme(legend.text = element_text(size=12, margin = margin(0,0,5,0)),
+        legend.box.margin=margin(0,0,10,0),
+        legend.key.size = unit(0.5,"cm"),
+        legend.key.width = unit(0.5,'cm'),
+        legend.position="bottom",
+        legend.direction = "horizontal",
+        plot.tag = element_text(size=16, hjust=0.25),
+        plot.tag.position=c(0.20,0.22))+
+  guides(fill=guide_legend(nrow=2, byrow=TRUE))
+
+```
+
+
+```{r, pie plot of daily users, fig.height=4, fig.width=4, echo=FALSE, warning=FALSE}
+daily_use_plot <- data %>%
+  group_by(active_use) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(perc = round(n/sum(n),4)) %>%
+  arrange(perc) %>%
+  mutate(labels=scales::percent(perc)) %>% 
+  ggplot(aes(x="", y=perc, fill=factor(active_use, levels=c("Low Daily Use", "Moderate Daily Use", "High Daily Use"))))+
+  geom_col(colour="black", size=0.5)+
+  geom_label(aes(label=labels),
+             colour=c("white",1, "white"),
+             position=position_stack(vjust=c(0.6,0.5,0.40)),
+             show.legend=FALSE,
+             size=12/.pt)+
+  coord_polar(theta="y")+
+  labs(tag ="Average Days Used", fill="")+
+  scale_fill_viridis_d(option="plasma", direction=-1, labels=c('Low','Moderate','High'))+
+  theme_void()+
+  theme(legend.text = element_text(size=12, margin = margin(0,0,5,0)),
+        legend.box.margin=margin(0,0,10,0),
+        legend.key.size = unit(0.5,"cm"),
+        legend.key.width = unit(0.5,'cm'),
+        legend.position="bottom",
+        legend.direction = "horizontal",
+        plot.tag = element_text(size=16, hjust=0.25),
+        plot.tag.position=c(0.20,0.22))+
+   guides(fill=guide_legend(nrow=2, byrow=TRUE))
+
+
+```
+
+
+```{r, pie plot of BMI, fig.width=4, fig.height=4, echo=FALSE, warning=FALSE}
+
+bmi_plot <- data %>%
+  group_by(BMI_class) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(perc = round(n/sum(n),4)) %>%
+  arrange(perc) %>%
+  mutate(labels=scales::percent(perc)) %>% 
+  ggplot(aes(x="", y=perc, fill=factor(BMI_class, levels=c("Not Reported","Normal", "Overweight","Obese"))))+
+  geom_col(colour="black")+
+  geom_label(aes(x=1.1,label=labels),
+             colour=c("white",1,1,"white"),
+             position=position_stack(vjust=c(0,0.60,0.55,0.5)),
+             show.legend=FALSE,
+             size=12/.pt)+
+  coord_polar(theta="y")+
+  labs(tag="BMI Class", fill="")+
+  scale_fill_viridis_d(option="turbo")+
+  theme_void()+
+  theme(legend.text = element_text(size=12, margin = margin(0,0,5,0)),
+        legend.box.margin=margin(0,0,10,0),
+        legend.key.size = unit(0.5,"cm"),
+        legend.key.width = unit(0.5,'cm'),
+        legend.position="bottom",
+        legend.direction = "horizontal",
+        plot.tag = element_text(size=16, hjust=0.25),
+        plot.tag.position=c(0.20,0.22))+
+  guides(fill=guide_legend(nrow=2, byrow=TRUE))
+
+
+```
+
+
+```{r, fig.height=4, fig.width=10, echo=FALSE, warning=FALSE}
+
+grid.arrange(activity_level_plot, daily_use_plot,bmi_plot, ncol=3,nrow=1,
+             heights=c(4), widths=c(4,4,4))
+rm(activity_level_plot, bmi_plot, daily_use_plot)
+```
+
+
+<br/>
+
+<br/>
+
+
+## **6. Results**
+
+<br/>
+
+#### *Question 1: When are people most active throughout the day and does that couple with energy expendure? How does this compare among people of different activity level?*
+
+**Major Finding:** The hypothesis that people will be most active in the evening is partially confirmed and is based primarily on a users activity level. 
+
+Key Points:
+
+* Active Users were most active with the greatest energy expenditure during the 6-8 pm hours, likely driven by desire for physical activity after the conclusion of the work day. 
+* Active users also see a spike in activity around the 12-2 pm hours, likely driven by mid-day lunchtime walks. 
+* Lightly active users also saw a small uptick around the 12-2 pm hours suggesting some small efforts for mid-day lunchtime walks
+* Sedentary users averaged <500 steps per hour with a small up tick around 7 pm that may be driven by dinnertime efforts. 
+  + These users also displayed slightly higher number of steps in early hours indicating these users may have a later bed time schedule. 
+
+<br/>
+
+
+```{r, hourly steps for active users, fig.height=5, fig.width=5, echo=FALSE}
+
+avg_hr_step_active  <- steps_hr_cleaned %>%
+  filter(activity_level == "Active")%>%
+  select(hr01:hr24)%>%
+  colMeans(na.rm=TRUE) %>%
+  data.frame() %>%
+  rename(AvgSteps = 1) %>%
+  mutate(hr = row.names(.),
+         hr = str_replace(hr,"hr",""),
+         hr = as.numeric(hr))%>% 
+  select(hr,AvgSteps)
+
+avg_hr_calories_active <- calories_hr_cleaned %>%
+  filter(activity_level == "Active")%>%
+  select(hr01:hr24)%>%
+  colMeans(na.rm=TRUE) %>%
+  data.frame() %>%
+  rename(AvgCalories = 1) %>%
+  mutate(hr = row.names(.),
+         hr = str_replace(hr,"hr",""),
+         hr = as.numeric(hr))%>% 
+  select(hr,AvgCalories)
+
+
+plot1 <- ggplot(data=avg_hr_step_active, aes(x=hr,y=AvgSteps))+
+  geom_col(aes(fill=avg_hr_calories_active$AvgCalories))+
+  labs(x="Hour", y="Average Number of Steps", fill="Calories Burned")+
+  scale_fill_gradient2(low="yellow", mid="orange", high="red", midpoint = 115, limits=c(60,170))+
+  ggtitle("Active Users Steps vs Calories Burned")+
+  ylim(0,1200)+
+  theme_light()+
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=14),
+        axis.title = element_text(size=14),
+        axis.title.y.left = element_text(margin = margin(0,5,0,0)),
+        axis.title.x = element_text(margin = margin (5,0,0,0)),
+        legend.position="none",
+        plot.title = element_text(hjust=0.5))
+  
+
+
+
+```
+
+```{r, hourly steps for lightly active users, fig.height=5, fig.width=5, echo = FALSE}
+
+avg_hr_step_light <- steps_hr_cleaned %>%
+  filter(activity_level == "Lightly Active")%>%
+  select(hr01:hr24)%>%
+  colMeans(na.rm=TRUE) %>%
+  data.frame() %>%
+  rename(AvgSteps = 1) %>%
+  mutate(hr = row.names(.),
+         hr = str_replace(hr,"hr",""),
+         hr = as.numeric(hr))%>% 
+  select(hr,AvgSteps)
+
+avg_hr_calories_light <- calories_hr_cleaned %>%
+  filter(activity_level == "Lightly Active")%>%
+  select(hr01:hr24)%>%
+  colMeans(na.rm=TRUE) %>%
+  data.frame() %>%
+  rename(AvgCalories = 1) %>%
+  mutate(hr = row.names(.),
+         hr = str_replace(hr,"hr",""),
+         hr = as.numeric(hr))%>% 
+  select(hr,AvgCalories)
+
+
+plot2 <- ggplot(data=avg_hr_step_light, aes(x=hr,y=AvgSteps))+
+  geom_col(aes(fill=avg_hr_calories_light$AvgCalories))+
+  labs(x="Hour", y="Average Number of Steps", fill="Calories Burned")+
+  scale_fill_gradient2(low="yellow", mid="orange", high="red", midpoint = 115, limits=c(60,170))+
+  ylim(0,1200)+
+  ggtitle("Lightly Active Users Steps vs Calories Burned")+
+  annotate("text", label="Calories Burned", x=12.5, y=1000, size=12/.pt)+
+  theme_light()+
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=14),
+        axis.title = element_text(size=14),
+        axis.title.y.left = element_text(margin = margin(0,5,0,0)),
+        axis.title.x = element_text(margin = margin (5,0,0,0)),
+        legend.title = element_blank(),
+        legend.text = element_text(size=12, hjust=0.5),
+        legend.position = c(0.5, 0.90),
+        legend.direction = "horizontal",
+        legend.key.width = unit(1, "cm"),
+        plot.title = element_text(hjust=0.5))
+
+
+
+```
+
+```{r, hourly steps for sedentary users, fig.height=5, fig.width=5, echo = FALSE}
+
+avg_hr_step_sed <- steps_hr_cleaned %>%
+  filter(activity_level == "Sedentary")%>%
+  select(hr01:hr24)%>%
+  colMeans(na.rm=TRUE) %>%
+  data.frame() %>%
+  rename(AvgSteps = 1) %>%
+  mutate(hr = row.names(.),
+         hr = str_replace(hr,"hr",""),
+         hr = as.numeric(hr))%>% 
+  select(hr,AvgSteps)
+
+avg_hr_calories_sed <- calories_hr_cleaned %>%
+  filter(activity_level == "Sedentary")%>%
+  select(hr01:hr24)%>%
+  colMeans(na.rm=TRUE) %>%
+  data.frame() %>%
+  rename(AvgCalories = 1) %>%
+  mutate(hr = row.names(.),
+         hr = str_replace(hr,"hr",""),
+         hr = as.numeric(hr))%>% 
+  select(hr,AvgCalories)
+
+
+plot3 <- ggplot(data=avg_hr_step_sed, aes(x=hr,y=AvgSteps))+
+  geom_col(aes(fill=avg_hr_calories_sed$AvgCalories))+
+  labs(x="Hour", y="Average Number of Steps", fill="Calories Burned")+
+  scale_fill_gradient2(low="yellow", mid="orange", high="red", midpoint = 115, limits=c(60,170))+
+  ggtitle("Sedentary Users Steps vs Calories Burned")+
+  ylim(0,1200)+
+  theme_light()+
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=14),
+        axis.title = element_text(size=14),
+        axis.title.y.left = element_text(margin = margin(0,5,0,0)),
+        axis.title.x = element_text(margin = margin (5,0,0,0)),
+        legend.position="none",
+        plot.title = element_text(hjust=0.5))
+
+
+
+```
+
+```{r, final figure, fig.height = 5, fig.width = 15, echo=FALSE}
+
+grid.arrange(plot1, plot2, plot3, ncol=3,
+             heights=c(5),
+             widths = c(5,5,5))
+
+rm(plot1, plot2, plot3, avg_hr_calories_active, avg_hr_calories_light, avg_hr_calories_sed, avg_hr_step_active, avg_hr_step_light, avg_hr_step_sed)
+```
+
+
+<br/>
+
+------------------
+
+<br/>
+
+
+#### *Question 2: Are people more active during the typical workweek or on weekends and are there differences based on peoples activity level?* 
+
+<br/>
+
+
+**Major Finding:** People are equally active across the entire week rejecting the hypothesis that people would be more active on the weekends. This is true regardless of activity level.  
+
+Key Points:
+
+* There was no significant difference in the number of steps taken for each day of the week regardless of activity level. 
+  + This is observed visually in the figure below noting the relatively stable average number of steps taken each day of the week for each activity level and the strong overlapping error bars
+  + This observation was confirmed statistically with a non-parametric Kruskal-Wallis test for each activity level which highlight the number of steps taken each day of the week is not significantly different (p > 0.05)
+
+<br/>
+
+```{r, column plots for number of steps by day of week, fig.height=5, fig.width=13.5, warning=FALSE, message=FALSE, echo=FALSE}
+weekday_levels <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+
+plot_theme <- theme(panel.grid = element_blank(),
+        axis.title.x = element_text(size=14, margin=margin(5,0,0,0)),
+        axis.title.y = element_text(size=14, margin=margin(0,5,0,0)),
+        axis.text.x = element_text(size=14, angle=25, hjust=1),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(size=16, hjust=0.5))
+
+
+plot1 <- activity %>%
+  group_by(activity_level,Weekday)%>%
+  mutate(Weekday = factor(Weekday,level=weekday_levels))%>%
+  summarise(mean_steps = mean(TotalSteps),
+            sd_steps = sd(TotalSteps))%>%
+  filter(activity_level == "Active") %>%
+  ggplot(aes(x=Weekday, y=mean_steps))+
+  geom_col(na.rm=TRUE, fill="#440154FF")+
+  geom_errorbar(aes(ymin=mean_steps-sd_steps, ymax=mean_steps+sd_steps), width=0.2)+
+  ylim(0, 20000)+labs(x="", y="Average Number of Steps")+
+  ggtitle("Active Users Steps per Day")+
+  theme_light()+ plot_theme
+  
+
+plot2 <- activity %>%
+  group_by(activity_level,Weekday)%>%
+  mutate(Weekday = factor(Weekday,level=weekday_levels))%>%
+  summarise(mean_steps = mean(TotalSteps),
+            sd_steps = sd(TotalSteps))%>%
+  filter(activity_level == "Lightly Active") %>%
+  ggplot(aes(x=Weekday, y=mean_steps))+
+  geom_col(na.rm=TRUE, fill="#21908CFF")+
+  geom_errorbar(aes(ymin=mean_steps-sd_steps, ymax=mean_steps+sd_steps), width=0.2)+
+  ylim(0, 20000)+labs(x="", y="Average Number of Steps")+
+  ggtitle("Lightly Active Users Steps per Day")+
+  theme_light()+ plot_theme
+
+plot3 <- activity %>%
+  group_by(activity_level,Weekday)%>%
+  mutate(Weekday = factor(Weekday,level=weekday_levels))%>%
+  summarise(mean_steps = mean(TotalSteps),
+            sd_steps = sd(TotalSteps))%>%
+  filter(activity_level == "Sedentary") %>%
+  ggplot(aes(x=Weekday, y=mean_steps))+
+  geom_col(na.rm=TRUE, fill = "#FDE725FF")+
+  geom_errorbar(aes(ymin=ifelse(mean_steps-sd_steps > 0, mean_steps-sd_steps, mean_steps-mean_steps+1), ymax=mean_steps+sd_steps), width=0.2)+
+  ylim(0, 20000)+
+  labs(x="", y="Average Number of Steps")+
+  ggtitle("Sedentary Users Steps per Day")+
+  theme_light()+ plot_theme
+  
+grid.arrange(plot1, plot2,plot3, ncol=3,
+             heights=c(5),
+             widths=c(4.5,4.5,4.5))     
+
+rm(plot1,plot2,plot3,plot_theme, weekday_levels)
+
+
+``` 
+ 
+<br/>
+ 
+```{r, Kruskal Wallis Test to determine if there are diffences in the number of steps taken during each day of the week, echo=FALSE}
+print('Kruskal Wallis Test for Highly Active Users to determine if there are signifcant differences in the number of steps taken throught each day of the week')
+activity %>% 
+  filter(activity_level == "Active")%>%
+  kruskal_test(TotalSteps~Weekday)
+```
+
+
+<br/>
+
+```{r, echo=FALSE}
+
+print('Kruskal Wallis Test for Lightly Active Users to determine if there are signifcant differences in the number of steps taken throught each day of the week')
+activity %>% 
+  filter(activity_level == "Lightly Active")%>%
+  kruskal_test(TotalSteps~Weekday)
+```
+
+<br/>
+
+
+
+```{r, echo=FALSE}
+print('Kruskal Wallis Test for Sedentary Users to determine if there are signifcant differences in the number of steps taken throught each day of the week')
+activity %>% 
+  filter(activity_level == "Sedentary")%>%
+  kruskal_test(TotalSteps~Weekday)
+  
+```   
+
+<br/>
+
+------------------
+
+<br/>
+
+
+
+#### *Question 3: Do more physically active users get more hours of sleep at night?*
+
+<br/>
+
+**Major Finding:** There was no difference in how many hours of sleep a user received based on their activity level rejecting the hypothesis that sedentary users would likely sleep more that more active users. 
+
+Key Points:
+
+* The average hours of sleep is provided in the table below and displayed visually in the figure below. While lightly active users had a slightly higher number of hours of sleep, this was not signficantly different (Kruskal-Wallis, p>0.05).
+  + Note this analysis removed 2 outliers that indicated < 3 hours of sleep and 1 outlier that indicated > 10 hours of sleep in one night. 
+
+<br/>
+
+```{r, summary stats for activity level and hours of sleep, echo=FALSE}
+
+data_sum <- data %>%
+  filter(avg_sleep_hr > 3 & avg_sleep_hr < 10) %>%
+  group_by(activity_level) %>%
+  summarise(median_sleep = median(avg_sleep_hr, na.rm=TRUE),
+            avg_sleep = mean(avg_sleep_hr, na.rm=TRUE),
+            sd_sleep = sd(avg_sleep_hr, na.rm=TRUE))%>%
+  print()
+```
+
+<br/>
+
+
+```{r, boxplot of sleeping hours by activity level, echo=FALSE}
+
+ggplot(data=subset(data, avg_sleep_hr > 3 & avg_sleep_hr < 9), aes(x=activity_level, y=avg_sleep_hr, fill=factor(activity_level, levels=c("Sedentary", "Lightly Active", "Active"))))+
+  geom_boxplot()+
+  labs(fill="", x="Activity Level", y="Average Number of Sleeping Hours")+
+  scale_fill_viridis_d(direction=-1)+
+  annotate("text", label="Mean = 6 ± 1 hrs", x=1, y=9.5, colour="red", size=14/.pt)+
+  annotate("text", label="Mean = 7 ± 1 hrs", x=2, y=9.5, colour="red", size=14/.pt)+
+  annotate("text", label="Mean = 6.6 ± 0.6 hrs", x=3, y=9.5, colour="red", size=14/.pt)+
+  annotate("text", label= "No signficant difference in sleeping hours by activity level (Kruskal-Wallis, p > 0.05)", x=2, y=0.5, size=11/.pt)+
+  ylim(0,10)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14),
+        axis.title.x = element_text(margin=margin(10,0,0,0)),
+        axis.title.y = element_text(margin=margin(0,10,0,0)),
+        legend.position="none")
+
+
+```
+
+<br/>
+
+```{r, Kruskal-Wallis to detrmine differences in sleeping hours by activity level, echo=FALSE}
+# Kruskal-Wallis Test to determine if more active people sleep more at night than less active people
+# Note this test was constrained to remove outliers which stated a sleep of < 3hours per night or 1 sample with > 10 hours per sleep. 
+
+print('Kruskal Wallis Test to determine if there is a difference in the average numbe of sleeping hours by activity level')
+kruskal_test(avg_sleep_hr~activity_level, data=subset(data, avg_sleep_hr > 3 & avg_sleep_hr < 9))
+
+
+```
+
+
+<br/>
+
+------------------
+
+<br/>
+
+
+
+#### *Question 4: Is fitness level an indicator how many days users wear a fitness watch within a month (e.g., motivation to regularly use product)?* 
+
+<br/>
+
+**Major Findings:** Users who take more steps wear their watch more consistently indicating that more active users are likely to show higher motivation and need for purchasing a fitness watch.
+
+Key Points:
+
+* There was a statistically significant linkage between the number number of days a user wore their watch during the study period and the average number of steps the user took during the study period. (Spearman rank correlation, p < 0.01). 
+* Broadly, the number of days the fitness watch was worn during the study period was higher for active and lightly active users, although we could not statically confirm this when breaking down specifically by group (Kruskal-Wallis, p > 0.05).
+
+<br/>
+
+
+```{r, correlation plot for days used vs average steps,  fig.height=5, fig.width=5, echo=FALSE, message=FALSE, warning=FALSE}
+plot_1 <- ggplot(data=data, aes(x=avg_steps, y=days_used))+
+  geom_point()+
+  geom_smooth(method="lm", se=FALSE, colour="black", linetype="dashed")+
+  xlab("Average Daily Steps")+ylab("Number of Days Worn")+labs(tag="A")+
+  xlim(2000,16000)+ylim(0,35)+
+  annotate("text", label="p < 0.01", x=14000, y=2, colour="black", size=16/.pt)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14),
+        axis.title.x = element_text(margin=margin(5,0,0,0)),
+        axis.title.y = element_text(margin=margin(0,5,0,0)),
+        plot.tag.position = c(0.05, 0.05),
+        plot.tag = element_text(size=20))
+  
+
+```
+
+```{r, box plot for days used vs activity level, echo=FALSE, fig.height=5, fig.width=5}
+plot_2 <- ggplot(data=data, aes(x=factor(activity_level, levels=c("Active", "Lightly Active", "Sedentary")), y=days_used, fill=factor(activity_level, levels=c("Active", "Lightly Active", "Sedentary"))))+
+  geom_boxplot()+
+  labs(fill="", x="Activity Level", y="Number of Days Worn", tag="B")+
+  ylim(0,35)+
+  scale_fill_viridis_d(direction=1)+
+  annotate("text", label="p > 0.05", x=3, y=2, colour="black", size=16/.pt)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14),
+        axis.title.x = element_text(margin=margin(10,0,0,0)),
+        axis.title.y = element_text(margin=margin(0,10,0,0)),
+        legend.position="none",
+        plot.tag.position = c(0.05,0.05),
+        plot.tag = element_text(size=20))
+
+```
+
+
+```{r, final figure showing number of days watch worn by total steps taken, echo=FALSE, fig.height = 4, fig.width=8, warning=FALSE, message=FALSE, echo=FALSE}
+
+grid.arrange(plot_1, plot_2, ncol=2,nrow=1,
+             heights=c(4), widths=c(4,4))
+
+
+```
+
+
+<br/>
+
+
+```{r, histograms for days worn, fig.height=5, fig.width=5, echo=FALSE, fig.show='hide' }
+# Generate histograms of the average number of days among users and the average number of steps
+hist(data$days_used)
+hist(data$avg_steps)
+
+```
+
+```{r, spearman correlations for number of days fitness watch was used vs number of steps taken, echo=FALSE}
+
+print("Spearman Rank Correlation for the number of days the watch was used vs the average number of daily steps during the study period")
+summary(lm(rank(days_used)~rank(avg_steps), data=data))
+```
+
+
+<br/>
+
+```{r, echo=FALSE}
+print("Kruskal-Wallis test to determine if number of days worn during the study period is users of different activity level")
+kruskal_test(days_used~activity_level, data=data)
+
+```
+
+<br/>
+
+------------------
+
+<br/>
+
+
+
+#### *Question 5: Is fitness level an indicator of how often users sleep with their watch?*
+
+<br/>
+
+**Major Findings:** Patterns in which fitness watches were used to monitor sleep activity were not linked with fitness level, but rather indicate as a whole that monitoring sleep activity is not a high priority for users. 
+
+Key Points:
+
+* The median number of nights that users wore their fitness watch during the overnight hours was 5 (out of 31).  
+* Activity level was not an indicator of how consistent a person wears their fitness watch to bed, but rather there was a broad variation among all groups indicating varying levels of desire among all users in whether or not to use the watch while they sleep. 
+
+<br/>
+
+
+```{r, plot showing the number of nights the watch was worn to sleep as a function of the daily steps taken, warning=FALSE, message=FALSE, echo=FALSE, warning=FALSE,}
+
+plot_1 <- ggplot(data=data, aes(x=avg_steps, y=sleep_days_used))+
+  geom_abline(intercept=5, slope=0, linetype="dotted", linewidth=0.8, colour="red", alpha=0.5)+
+  geom_point()+
+  xlab("Average Daily Steps")+ylab("Number of Days Worn")+labs(tag="A")+
+  xlim(2000,16000)+ylim(0,35)+
+  annotate("text", label="p > 0.05", x=14000, y=8, colour="black", size=14/.pt)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14),
+        axis.title.x = element_text(margin=margin(5,0,0,0)),
+        axis.title.y = element_text(margin=margin(0,5,0,0)),
+        plot.tag.position = c(0.05, 0.05),
+        plot.tag = element_text(size=20))
+  
+
+```
+
+```{r, plot showing activity level vs number of nights watch worn to sleep, warning=FALSE, message=FALSE, echo=FALSE}
+
+
+plot_2 <- ggplot(data=data,aes(x=factor(activity_level,level=c("Active", "Lightly Active","Sedentary")), y=sleep_days_used, fill=factor(activity_level,level=c("Active","Lightly Active","Sedentary"))))+
+  geom_boxplot()+
+  scale_fill_viridis_d(direction=1)+
+  ylab("No. of Sleep Nights Recorded")+xlab("Activity Level")+labs(fill="", tag="B")+
+  annotate("text", label="Median = 5 nights", x=1, y=31, size=10/.pt, colour="red", hjust=0.5)+
+  theme_bw()+
+  theme(panel.grid = element_blank(),
+        axis.text = element_text(size=12),
+        axis.title = element_text(size=14),
+        axis.title.x = element_text(margin=margin(10,0,0,0)),
+        axis.title.y = element_text(margin=margin(0,10,0,0)),
+        legend.position="none",
+        plot.tag.position = c(0.05,0.05),
+        plot.tag = element_text(size=20))+
+   geom_abline(intercept=5, slope=0, linetype="dotted", linewidth=0.8, colour="red", alpha=0.5)
+
+
+
+```
+
+```{r, fig.width=8, fig.height=4, warning=FALSE, message=FALSE, echo=FALSE}
+
+grid.arrange(plot_1, plot_2, ncol=2,nrow=1,
+             heights=c(4), widths=c(4,4))
+
+```
+
+
+<br/>
+
+
+```{r, histograms for number of sleep days used, fig.height=5, fig.width=5, echo=FALSE, fig.show='hide', echo=FALSE }
+
+hist(data$avg_steps)
+hist(data$sleep_days_used)
+
+```
+
+
+```{r, spearman correlations for number of days where sleep was recorded as a function of steps taken, echo=FALSE}
+print("Spearman Rank Correlation for the number of sleep days vs the average number of daily steps during the study period")
+summary(lm(rank(sleep_days_used)~rank(avg_steps), data=data))
+
+```
+
+
+<br/>
+
+
+
+## **7. Conclusions**
+
+1. At a high level, this analysis shows some general patterns in fitness behavior. For example, highly active users are more active during lunch and after work hours, however; there is no indication among fitness groups that people would be more active over the weekends as was hypothesized. 
+
+2. While it was hypothesized that sedentary users would likely sleep more, there was no difference in sleep activity among users of different activity levels. 
+
+3. On average, people who take more daily steps are likely to wear their fitness watch more consistently, however, this was not the case for wearing the fitness watches at night time, which had no predictable trends. 
+
+
+<br/>
+
+
+
+## **8. Recommendations**
+
+1. It is highly recommended first and foremost that Bellabeat conduct their own study that would allow them to collect targeted data at specifically links to questions and needs relevant to their client base. This current dataset does not provide insight on sex, race, age, or geographic location and is limited to 33 participants. So we can not conclusively say this data set is represented of their clients and interpretations much be exercised with caution. 
+
+2. This analysis clearly indicates that highly active people are more motivated to use fitness watches, and likely support any kind of fitness products. While it may be tempting from a marketing perspective to target people who would like to lose weight, it would seem that targeting people who are already keen on fitness is a better approach. 
+
+3. There may be opportunity to encourage less active people to be come more active through notifications on the app (e.g., reminders to get up and move) or providing some kind of incentives become active. People love competition, even if only with themselves. Encouraging people to become healthy will help incentivize them to use their current watches more consistently and more likely to purchase another watch again in the future, or other fitness products. 
+
+4. This analyse clearly indicates that sleep monitoring is not a consistently favorable feature, rather instead a very low use feature. This is likely due to fitness watches being bulky and potentially uncomfortable for people when trying to sleep. This highlights potential opportunity for Bellabeat to market their "Leaf" product as a potential alternative to monitor wellness activities, such as sleep, without the need for something large and intrusive on their wrist. 
