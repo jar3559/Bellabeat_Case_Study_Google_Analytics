@@ -169,7 +169,7 @@ Over 30   | Obese
 
 # Read in activity data and add a column for "Day_Used". This column is defined by the number of steps. 
 
-activity <- read.csv("dailyActivity_merged.csv", sep=",") %>%
+activity <- read.csv("/FitBit_Data/dailyActivity_merged.csv", sep=",") %>%
   mutate(TotalTime_hr = (VeryActiveMinutes+FairlyActiveMinutes+LightlyActiveMinutes+SedentaryMinutes)/60,
          Date = format(as.POSIXct(ActivityDate, format="%m/%d/%Y")),
          Weekday = weekdays(as.Date(Date))) %>%
@@ -178,7 +178,7 @@ activity <- read.csv("dailyActivity_merged.csv", sep=",") %>%
 
 
 # Read in sleep data
-sleep <- read.csv("sleepDay_merged.csv", sep=",")
+sleep <- read.csv("/FitBit_Data/sleepDay_merged.csv", sep=",")
 
 # Read in weight data and add a column for BMI. BMI metrics were defined by the World Health Organization
 weight <- read.csv("weightLogInfo_merged.csv", sep=",") %>% 
@@ -316,7 +316,7 @@ head(data)
 Hourly calorie and hourly steps data were retrieved from the files *'hourlyCalories_merged.csv'* and *'hourlySteps_merged.csv'*. In both cases, data is reshaped from 'long' to 'wide' format with column names renamed based on hourly intervals.
 ```{r, echo=FALSE}
 
-calories_hr <- read.csv("hourlyCalories_merged.csv") %>%
+calories_hr <- read.csv("/FitBit_Data/hourlyCalories_merged.csv") %>%
   mutate(ActivityHour = mdy_hms(ActivityHour),
          Date = format(as.POSIXct(ActivityHour), format="%Y-%m-%d"),
          Time = format(as.POSIXct(ActivityHour), format="%H:%M:%S")) %>%
@@ -326,7 +326,7 @@ calories_hr <- read.csv("hourlyCalories_merged.csv") %>%
          hr13=15, hr14=16, hr15=17, hr16=18, hr17=19, hr18=20, hr19=21, hr20=22, hr21=23, hr22=24, hr23=25, hr24=26)%>%
   mutate_if(is.integer, as.numeric)
 
-steps_hr <- read.csv("hourlySteps_merged.csv") %>%
+steps_hr <- read.csv("/FitBit_Data/hourlySteps_merged.csv") %>%
   mutate(ActivityHour = mdy_hms(ActivityHour),
          Date = format(as.POSIXct(ActivityHour), format="%Y-%m-%d"),
          Time = format(as.POSIXct(ActivityHour), format="%H:%M:%S")) %>%
